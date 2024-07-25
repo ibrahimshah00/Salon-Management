@@ -1,0 +1,157 @@
+﻿@page "/addbusinessowner"
+@page "/addbusinessowner/{edit}"
+@using Entities;
+@using ShopAdmin.Data;
+@inject NavigationManager nm;
+@inject IAllBusinessOwner bo;
+@inject Appstate mystate;
+
+<AuthorizeView Context="authorizationContext" Roles="administrator">
+    <Authorized>
+
+        <EditForm Model="BOModel">
+            <div class="row">
+                <div class="col-md-8 offset-lg-2">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h3>Manage your profile</h3>
+                            <input type="text" class="form-control mb-2" @bind="BOModel.username" placeholder="Enter User Name" />
+
+                            <input class="form-control mb-2" type="text" @bind="BOModel.password" placeholder="Enter Password" />
+
+                            <input class="form-control mb-2" type="text" @bind="BOModel.role" placeholder="Enter Role" />
+                    
+                            <input class="form-control mb-2" type="text" @bind="@BOModel.firstname" placeholder="Enter First Name" />
+                         
+                            <input class="form-control mb-2" type="text" @bind="BOModel.lastname" placeholder="Enter Last Name" />
+                          
+
+                            <input class="form-control mb-2" type="text" @bind="BOModel.cnic" placeholder="Enter CNIC" />
+                         
+
+                            <input class ="form-control mb-2" type="text" @bind="BOModel.emailadress" placeholder="Enter Email Adress" />
+                           
+
+                            <input class="form-control mb-2" type="text" @bind="BOModel.phone" placeholder="Enter Phone" />
+                           
+                            <InputFile OnChange="@OnInputFileChange" class="form-control mb-2" />
+                            
+                            <button type="submit" @onclick=saveBO class="btn btn-primary">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </EditForm>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to access this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    EntBusinessOwner BOModel { get; set; } = new EntBusinessOwner();
+    [Parameter] public string? edit { get; set; }
+    private string? ButtonTitle { get; set; } = "Save";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (edit == "update")
+        {
+            BOModel = BusinessOwner.UpdateBO;
+            ButtonTitle = "Update";
+        }
+    }
+
+
+
+    private void saveBO()
+    {
+        if (ButtonTitle == "Save")
+        {
+            Random rand = new Random();
+            BOModel.boid = rand.Next(100000, 999999);
+            bo.AddOwner(BOModel);
+            nm.NavigateTo("profile");
+        }
+        else if (ButtonTitle == "Update")
+        {
+            bo.UpdateBO(BOModel);
+            nm.NavigateTo("profile");
+        }
+    }
+
+    // private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    // {
+    //     var file = e.File;
+    //     if (file != null)
+    //     {
+    //         using (var ms = new MemoryStream())
+    //         {
+    //             await file.OpenReadStream().CopyToAsync(ms);
+    //             var bytes = ms.ToArray();
+    //             var base64 = Convert.ToBase64String(bytes);
+    //             BOModel.image = base64;
+    //         }
+    //     }
+    // }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+
+            var imagesPath = "wwwroot/images";
+
+            if (!Directory.Exists(imagesPath))
+            {
+                Directory.CreateDirectory(imagesPath);
+            }
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.Name);
+            var filePath = Path.Combine(imagesPath, fileName);
+
+            // Save the file to the specified path.
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.OpenReadStream().CopyToAsync(stream);
+            }
+
+            // Save the relative path or the necessary identifier of the image in the database.
+            BOModel.image = filePath; // Adjust based on your model and how you'll access the image.
+        }
+    }
+    // private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    // {
+    //     var file = e.File;
+    //     if (file != null)
+    //     {
+    //         // Set the folder path for ServiceIcon within wwwroot
+    //         var folderPath = Path.Combine("wwwroot", "ServiceIcon");
+
+    //         // Ensure the directory exists
+    //         if (!Directory.Exists(folderPath))
+    //         {
+    //             Directory.CreateDirectory(folderPath);
+    //         }
+
+    //         // Create a unique file name to prevent any name conflicts
+    //         var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.Name);
+    //         var filePath = Path.Combine(folderPath, fileName);
+
+    //         // Save the file to the specified path
+    //         using (var stream = new FileStream(filePath, FileMode.Create))
+    //         {
+    //             await file.OpenReadStream().CopyToAsync(stream);
+    //         }
+
+    //         // Store a relative path or a direct path based on your access strategy in the application
+    //         // Adjusting path to be relative for web access
+    //         var relativePath = $"/ServiceIcon/{fileName}";
+    //         BOModel.image = relativePath; // Store this relative path to be saved in the database or used elsewhere
+    //     }
+    // }
+
+}

@@ -1,0 +1,71 @@
+﻿@page "/shopmanager";
+@inject IShopManager ob;
+@inject NavigationManager nm
+<h4>Hy shopmanager</h4>
+
+<a href="addmanager" class="btn btn-primary">Add New</a>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Boid</th>
+            <th>City</th>
+            <th>Area</th>
+            <th>Location</th>
+            <th>Phone</th>
+            <th>Url</th>
+            <th>Cover Image</th>
+            <th>Business description</th>
+            <th>Active</th>
+            <th>update</th>
+            <th>Action</th>
+
+        </tr>
+    </thead>
+            @foreach(var item in ListShop)
+            {
+        <tr>
+            <td>@item.shopid</td>
+            <td>@item.boid</td>
+            <td>@item.city</td>
+            <td>@item.area</td>
+            <td>@item.location</td>
+            <td>@item.phone</td>
+            <td>@item.logurl</td>
+            <td>@item.coverimageurl</td>
+            <td>@item.businessdescription</td>
+            <td>@item.isactive</td>
+            <button style="margin-top:8px" @onclick="()=>Update(item.boid)">Update</button>
+
+            <td>
+                <button @onclick="()=>Delete(item.shopid)">Delete</button>
+            </td>
+
+        </tr>
+            }
+            </table>
+@code {
+    private List<EntShop> ListShop{ get; set; } = new List<EntShop>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        ListShop = await ob.getshop();
+    }
+    private async Task Delete(int Boid)
+    {
+        await ob.DeleteShopManager(Boid);
+        ListShop = await ob.getshop();
+    }
+
+
+    [Parameter] public static EntShop Updateshop{ get; set; }
+
+     [Parameter] public static EntBusinessOwner UpdateBO { get; set; }
+    private async Task Update(int id)
+    {
+        Updateshop = ListShop.Find(x => x.shopid == id);
+
+        nm.NavigateTo("addmanager/update");
+    }
+   
+}

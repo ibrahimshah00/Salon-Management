@@ -1,0 +1,192 @@
+﻿@using System.Globalization
+@using Entities
+@using ShopAdmin.Data
+@inject IUserInfo ui
+@inject Appstate mystate
+@inject IJSRuntime JSRuntime
+
+<div class="row">
+    <div class="col-md-6">
+        <h3>This Year Sales Summary</h3>
+        <canvas id="yearlySalesChart" style="max-height: 400px;"></canvas>
+    </div>
+
+    <div class="col-md-6">
+        <h3>Last 5 Years Sales Summary</h3>
+        <canvas id="lastFiveYearsSalesChart" style="max-height: 400px;"></canvas>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int SelectedYear { get; set; } = DateTime.Now.Year;
+
+    private List<EntUser> UserTransactions;
+    private Dictionary<string, decimal> MonthlySales = new Dictionary<string, decimal>();
+    private Dictionary<int, decimal> LastFiveYearsSales = new Dictionary<int, decimal>();
+    private bool FetchFailed = false;
+    private bool IsLoaded = false; // Flag to track if data is loaded
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchAndRenderSales();
+        await RenderCharts();
+    }
+
+    private async Task FetchAndRenderSales()
+    {
+        try
+        {
+            int shopId = mystate.ShopDetail;
+            UserTransactions = await ui.GetUserInfo(shopId);
+
+            if (UserTransactions != null)
+            {
+                CalculateMonthlySales();
+                CalculateLastFiveYearsSales();
+            }
+            else
+            {
+                Console.WriteLine("No transactions found.");
+                FetchFailed = true; // Set fetchFailed flag if no transactions found
+            }
+
+            IsLoaded = true; // Mark data as loaded
+        }
+        catch (Exception ex)
+        {
+            FetchFailed = true;
+            Console.WriteLine($"Error fetching sales data: {ex.Message}");
+        }
+
+        StateHasChanged(); // Trigger re-render after data fetch
+    }
+
+    private void CalculateMonthlySales()
+    {
+        MonthlySales.Clear();
+
+        if (UserTransactions == null)
+        {
+            Console.WriteLine("No transactions found.");
+            return;
+        }
+
+        var transactionsByMonth = UserTransactions
+            .Where(t => t.datetime.Year == SelectedYear)
+            .GroupBy(t => t.datetime.Month);
+
+        foreach (var monthGroup in transactionsByMonth)
+        {
+            var monthName = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(monthGroup.Key);
+            decimal totalSales = 0;
+
+            foreach (var transaction in monthGroup)
+            {
+                if (decimal.TryParse(transaction.amount.Replace(",", ""), NumberStyles.Currency, CultureInfo.InvariantCulture, out decimal amount))
+                {
+                    totalSales += amount;
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to parse amount: {transaction.amount}");
+                }
+            }
+
+            MonthlySales[monthName] = totalSales;
+        }
+    }
+
+    private void CalculateLastFiveYearsSales()
+    {
+        LastFiveYearsSales.Clear();
+
+        if (UserTransactions == null)
+        {
+            Console.WriteLine("No transactions found.");
+            return;
+        }
+
+        var transactionsByYear = UserTransactions
+            .GroupBy(t => t.datetime.Year)
+            .Where(g => g.Key >= DateTime.Now.Year - 4 && g.Key <= DateTime.Now.Year);
+
+        foreach (var yearGroup in transactionsByYear)
+        {
+            int year = yearGroup.Key;
+            decimal totalSales = 0;
+
+            foreach (var transaction in yearGroup)
+            {
+                if (decimal.TryParse(transaction.amount.Replace(",", ""), NumberStyles.Currency, CultureInfo.InvariantCulture, out decimal amount))
+                {
+                    totalSales += amount;
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to parse amount: {transaction.amount}");
+                }
+            }
+
+            LastFiveYearsSales[year] = totalSales;
+        }
+    }
+
+    private async Task RenderCharts()
+    {
+        if (!IsLoaded) return; // Do not render if data is not loaded
+
+        var yearlySalesData = new
+        {
+            labels = MonthlySales.Keys.ToArray(),
+            datasets = new[]
+            {
+                new
+                {
+                    label = $"Total Sales {SelectedYear}",
+                    data = MonthlySales.Values.ToArray(),
+                    backgroundColor = "rgba(75, 192, 192, 0.2)",
+                    borderColor = "rgba(75, 192, 192, 1)",
+                    borderWidth = 1
+                }
+            }
+        };
+
+        var lastFiveYearsSalesData = new
+        {
+            labels = LastFiveYearsSales.Keys.ToArray(),
+            datasets = new[]
+            {
+                new
+                {
+                    label = "Total Sales",
+                    data = LastFiveYearsSales.Values.ToArray(),
+                    backgroundColor = "rgba(54, 162, 235, 0.2)",
+                    borderColor = "rgba(54, 162, 235, 1)",
+                    borderWidth = 1
+                }
+            }
+        };
+
+        var options = new
+        {
+            scales = new
+            {
+                y = new
+                {
+                    beginAtZero = true
+                }
+            }
+        };
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("renderChart", "yearlySalesChart", yearlySalesData, options);
+            await JSRuntime.InvokeVoidAsync("renderChart", "lastFiveYearsSalesChart", lastFiveYearsSalesData, options);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error rendering charts: {ex.Message}");
+        }
+    }
+}

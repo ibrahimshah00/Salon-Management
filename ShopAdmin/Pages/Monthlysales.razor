@@ -1,0 +1,112 @@
+﻿@page "/monthlysales"
+@layout DailySaleLayout
+@using System.Globalization
+@using Entities
+@using ShopAdmin.Data
+@inject IUserInfo ui
+@inject Appstate mystate
+
+<h3>Monthly Sales Report for @CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(selectedMonth) @selectedYear</h3>
+
+<div>
+    <label for="year">Year:</label>
+    <input id="year" type="number" @bind="selectedYear" class="form-control" />
+</div>
+<div>
+    <label for="month">Month:</label>
+    <select id="month" @bind="selectedMonth" class="form-control">
+        @for (int i = 1; i <= 12; i++)
+        {
+            <option value="@i">@CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(i)</option>
+        }
+    </select>
+</div>
+<div>
+    <button class="btn btn-primary mt-4" @onclick="FetchSales">Fetch Sales</button>
+</div>
+
+@if (monthlySales != null)
+{
+    <table class="table mt-4">
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th>Total Sales</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>@CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(selectedMonth)</td>
+                <td>@monthlySales.ToString("C")</td>
+            </tr>
+        </tbody>
+    </table>
+}
+else if (fetchFailed)
+{
+    <p class="text-danger">Failed to fetch sales data.</p>
+}
+
+@code {
+    private List<EntUser> userTransactions;
+    private decimal monthlySales;
+    private bool fetchFailed = false;
+    private int selectedYear = DateTime.Now.Year;
+    private int selectedMonth = DateTime.Now.Month;
+
+    private async Task FetchSales()
+    {
+        try
+        {
+            int shopId = mystate.ShopDetail;
+            userTransactions = await ui.GetUserInfo(shopId);
+
+            if (userTransactions != null)
+            {
+                Console.WriteLine($"Fetched {userTransactions.Count} transactions.");
+            }
+            else
+            {
+                Console.WriteLine("No transactions found.");
+            }
+
+            CalculateMonthlySales();
+            fetchFailed = false; // Reset fetchFailed flag on successful fetch
+        }
+        catch (Exception ex)
+        {
+            fetchFailed = true;
+            Console.WriteLine($"Error fetching sales data: {ex.Message}");
+        }
+    }
+
+    private void CalculateMonthlySales()
+    {
+        monthlySales = 0;
+
+        // Ensure userTransactions is not null
+        if (userTransactions == null)
+        {
+            Console.WriteLine("No transactions found.");
+            return;
+        }
+
+        var transactionsForMonth = userTransactions
+            .Where(t => t.datetime.Year == selectedYear && t.datetime.Month == selectedMonth);
+
+        foreach (var transaction in transactionsForMonth)
+        {
+            Console.WriteLine($"Processing transaction: {transaction.datetime}, Amount: {transaction.amount}");
+            if (decimal.TryParse(transaction.amount.Replace(",", ""), NumberStyles.Currency, CultureInfo.InvariantCulture, out decimal amount))
+            {
+                monthlySales += amount;
+            }
+            else
+            {
+                Console.WriteLine($"Failed to parse amount: {transaction.amount}");
+            }
+        }
+
+        Console.WriteLine($"Total Sales for {CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(selectedMonth)}: {monthlySales}");
+    }
+}

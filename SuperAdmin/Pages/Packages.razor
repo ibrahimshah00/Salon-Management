@@ -1,0 +1,53 @@
+﻿@page "/packagesprofile"
+@using Entities;
+@using SuperAdmin.Data;
+@inject IPackages ob;
+
+<h3>Packages</h3>
+
+<a href="savepackage" class="btn btn-primary">Add New</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Packages Name</th>
+            <th>Packages ID</th>
+            <th>Shop ID</th>
+            <th>Services</th>
+            <th>Price</th>
+            <th>Action</th>
+
+
+        </tr>
+    </thead>
+    @foreach (var item in listpackages)
+    {
+        <tr>
+            <td>@item.packagename</td>
+            <td>@item.packageid</td>
+            <td>@item.shopid</td>
+            <td>@item.services</td>
+            <td>@item.price</td>
+            <td>
+                <button @onclick="()=>Delete(item.packageid)">Delete</button>
+            </td>
+        </tr>
+    }
+</table>
+
+
+@code {
+    private List<EntPackages> listpackages { get; set; } = new List<EntPackages>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        listpackages = await ob.GetPackages();
+    }
+
+    private async Task Delete(int BOId)
+    {
+        await ob.DeletePackage(BOId);
+        listpackages = await ob.GetPackages();
+
+    }
+}

@@ -1,0 +1,186 @@
+﻿ @page "/addservices"
+@page "/addservices/{edit}"
+@inject Appstate mysate;
+@using Entities;
+@inject IWebHostEnvironment env
+@using ShopAdmin.Data;
+@inject NavigationManager nm
+@inject IServices ob;
+@inject Appstate mystate;
+
+<AuthorizeView Context="authorizationContext" Roles="ShopOwner,administrator">
+    <Authorized>
+
+<EditForm Model="ServiceModel">
+            <div class="row">
+                <div class="col-md-8 offset-lg-2">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h3>Manage your Shop</h3>
+            <input class="form-control mb-2" type="text" @bind="@ServiceModel.servicename" placeholder="Enter Service Name" />
+            <input class="form-control mb-2" type="text" @bind="@ServiceModel.price" placeholder="Enter Price" />
+            @* <select @bind="ServiceModel.Image" class="form-control mb-2">
+            @* <InputFile OnChange="@OnInputFileChange" class="form-control mb-2" /> 
+            @foreach (var imagePath in serviceIconFiles)
+                {
+                     <option value="@imagePath">@imagePath</option>
+                }
+            </select> *@
+
+            @*  <Select @bind="ServiceModel.Image" class="form-control mb-2" Style="width: 100%">
+            @foreach (var imagePath in serviceIconFiles)
+            {
+            <SelectOption Value="@imagePath">
+            <img src="@($"/ServiceIcon/{imagePath}")" alt="@imagePath" style="height:50px; width:50px;" />
+            <span>@imagePath</span>
+            </SelectOption>
+            }
+                            </Select> *@
+
+                            <div class="dropdown-container" @onclick="ToggleDropdown">
+                                <div class="dropdown-header">
+                                    @if (!string.IsNullOrEmpty(selectedImage))
+                                    {
+                                        <img src="@selectedImage" alt="Selected Image" style="height:50px; width:50px;" />
+                                    }
+                                    <span>@(selectedLabel ?? "Select an Image")</span>
+                                </div>
+                                <div class="dropdown-list" style="@($"display:{(dropdownOpen ? "block" : "none")}");">
+                                    @foreach (var imagePath in serviceIconFiles)
+                                    {
+                                        <div @onclick="() => SelectImage(imagePath)" class="dropdown-item">
+                                            <img src="@($"/ServiceIcon/{imagePath}")" alt="@imagePath" style="height:50px; width:50px;" />
+                                            
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+            <button type="submit" @onclick="saveservices" class="btn btn-primary">Save</button>
+                          </div>
+                    </div>
+                </div>
+            </div>
+</EditForm>
+
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to access this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<string> serviceIconFiles;
+    private bool dropdownOpen = false;
+    private string selectedImage;
+    private string selectedLabel;
+    private void ToggleDropdown()
+    {
+        dropdownOpen = !dropdownOpen;
+    }
+    
+
+
+
+    EntServices ServiceModel { get; set; } = new EntServices();
+    [Parameter] public string? edit { get; set; }
+    private string? ButtonTitle { get; set; } = "Save";
+    // IReadOnlyList<IBrowserFile>? selectedImageFiles;
+
+    // private async void OnImageFileChange(InputFileChangeEventArgs e)
+    // {
+    //     selectedImageFiles = e.GetMultipleFiles();
+    // }
+
+
+    private int shopid;
+    [Parameter]
+    public string Shopid
+    {
+        get => shopid.ToString();
+        set
+        {
+            if (int.TryParse(value, out int parsedvalue))
+            {
+                shopid = parsedvalue;
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (edit == "update")
+        {
+            ServiceModel = Services.UpdateBO;
+            ButtonTitle = "Update";
+        }
+        LoadImages();
+    }
+    private void SelectImage(string imagePath)
+    {
+        selectedImage = $"/ServiceIcon/{imagePath}"; // Full path for display
+        selectedLabel = imagePath; // Just the filename for display in dropdown
+        ServiceModel.Image = selectedImage; // Update the model to reflect the new selection
+        dropdownOpen = false; // Close the dropdown
+    }
+    private void LoadImages()
+    {
+        var imagesPath = Path.Combine(env.WebRootPath, "ServiceIcon");
+        serviceIconFiles = Directory.GetFiles(imagesPath).Select(Path.GetFileName).ToList();
+        if (serviceIconFiles.Any())
+        {
+            var firstImagePath = serviceIconFiles.First();
+            ServiceModel.Image = $"/ServiceIcon/{firstImagePath}"; // Make sure the model is set
+            selectedImage = ServiceModel.Image; // Ensure UI reflects this
+            selectedLabel = firstImagePath; // Label for display
+        }
+    }
+
+
+    private void saveservices()
+    {
+        if (ButtonTitle == "Save")
+        {
+            Random rand = new Random();
+            ServiceModel.serviceid = rand.Next(100000, 999999);
+            ServiceModel.shopid = mysate.ShopDetail;
+            ob.SaveService(ServiceModel);
+            nm.NavigateTo("/shopservices");
+        }
+        else if (ButtonTitle == "Update")
+        {
+            ob.UpdateServices(ServiceModel);
+            Console.WriteLine("00000000000000000000000 " + selectedImage);
+            nm.NavigateTo("/shopservices");
+        }
+    }
+
+        // private async Task OnInputFileChange(InputFileChangeEventArgs e)
+        // {
+        //     var file = e.File;
+        //     if (file != null)
+        //     {
+
+        //         var imagesPath = "wwwroot/images";
+
+        //         if (!Directory.Exists(imagesPath))
+        //         {
+        //             Directory.CreateDirectory(imagesPath);
+        //         }
+
+        //         var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.Name);
+        //         var filePath = Path.Combine(imagesPath, fileName);
+
+        //         // Save the file to the specified path.
+        //         using (var stream = new FileStream(filePath, FileMode.Create))
+        //         {
+        //             await file.OpenReadStream().CopyToAsync(stream);
+        //         }
+
+        //         // Save the relative path or the necessary identifier of the image in the database.
+        //         ServiceModel.Image = filePath; // Adjust based on your model and how you'll access the image.
+        //     }
+        // }
+    
+    }
+

@@ -1,0 +1,91 @@
+﻿@page "/shopemployee"
+
+@using Entities;
+@using ShopAdmin.Data;
+@inject NavigationManager nm;
+@inject IEmployee em;
+@inject Appstate mystate;
+
+
+<AuthorizeView Roles="ShopOwner,administrator">
+    <Authorized>
+
+
+        <div class="container ">
+            <div class="d-flex justify-content-between mb-4">
+              
+                <button @onclick="()=>NavigateToAddEmployee(mystate.ShopDetail)" class="btn btn-primary " style=" width: 130px; height: 40px;">
+                    Add Employee
+                </button>
+            </div>
+        </div>
+
+
+
+        <div class="row justify-content-center">
+            @foreach (var item in listemployee)
+            {
+                <div class="col-md-3 mb-4">
+                    <div class="card shadow-sm" style="width: 18rem;">
+                        @if (!string.IsNullOrEmpty(item.image))
+                        {
+                            var imagePath = item.image.Replace("wwwroot", "");
+                            <img src="@imagePath" class="card-img-top" alt="Employee Image" style="height: 250px; object-fit: cover; border-top-left-radius: .25rem; border-top-right-radius: .25rem;" />
+                        }
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-dark">@item.firstname @item.lastname</h5>
+                            <div class="d-flex justify-content-center mt-3">
+                                <button @onclick="()=>UpdateEmployee(item.empid)" class="btn btn-primary btn-sm me-1">Update</button>
+                                <button @onclick="()=>DeleteEmployee(item.empid)" class="btn btn-danger btn-sm">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to view this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+
+@code {
+    private List<EntEmployee> listemployee { get; set; } = new List<EntEmployee>();
+
+    private int shopid;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+       
+        listemployee = await em.GetShopEmployee(mystate.ShopDetail);
+    }
+  
+    private async Task NavigateToAddEmployee(int shopid)
+    {
+        nm.NavigateTo($"/addemployeeshop");
+    }
+
+    private async Task DeleteEmployee(int id)
+    {
+        await em.DeleteEmployee(id);
+        listemployee = await em.GetShopEmployee(mystate.ShopDetail);
+    }
+
+    [Parameter] public static EntEmployee UpdateBO { get; set; }
+    private async Task UpdateEmployee(int id)
+    {
+        mystate.Employeedetail = id;
+        UpdateBO = listemployee.Find(x => x.empid == id);
+
+        nm.NavigateTo($"/addemployeeshop/update");
+    }
+
+
+    private async Task backtopage()
+    {
+        nm.NavigateTo($"/ownershops");
+    }
+}

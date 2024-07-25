@@ -1,0 +1,84 @@
+﻿@page "/profile"
+@using System.ComponentModel
+
+@using Entities;
+@using ShopAdmin.Data;
+@inject IAllBusinessOwner ob;
+@inject NavigationManager nm;
+
+
+<AuthorizeView Roles="administrator">
+    <Authorized>
+
+        @foreach (var item in ListBusinesses)
+        {
+            <div class="col-md-12">
+                @if (!string.IsNullOrEmpty(item.image))
+                {
+                    _imgpath = item.image.Replace("wwwroot", "").Replace("\\","/");
+                    <div style="background-image:url(@_imgpath); background-size:cover; background-repeat:no-repeat; background-position: center; height:300px ; width:100%">
+                        
+                        @* <img src="@_imgpath" alt="Alternate Text" /> *@
+                    </div>
+                
+                    // Assuming your ImagePath stores the path like "wwwroot/images/myimage.jpg"
+                    // We need to strip the "wwwroot" part for web access
+                   // var imagePath = item.image.Replace("wwwroot", "");
+                    //<img src="@imagePath" alt="Service Image loading" class="img-fluid" style="height:300px;"/>
+             
+                }
+                <div class="card-body">
+                    <h5 class="card-title">@item.firstname @item.lastname</h5>
+                    <button @onclick="() => UpdatebusinessOwner(boid)" class="btn btn-primary mx-auto">Update</button>
+                    <button class="btn btn-danger mx-auto">Delete</button>
+                </div>
+                <div class="container mt-2">
+                    <h3 class="display-7"><i class="bi bi-person"></i> @item.firstname @item.lastname</h3>
+                </div>
+                <div class="container  mt-1">
+                    <h3 class="display-7"> <i class="bi bi-envelope-at-fill"></i> @item.emailadress</h3>
+                </div>
+                <div class="container  mt-1">
+                    <h3 class="display-7"><i class="bi bi-person-check"></i> @item.cnic</h3>
+                </div>
+                <div class="container mt-1">
+                    <h3 class="display-7"> <i class="bi bi-telephone"></i>  @item.phone</h3>
+                </div>
+              
+            </div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to view this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+
+
+@code {
+    private List<EntBusinessOwner> ListBusinesses { get; set; } = new List<EntBusinessOwner>();
+    private string? _imgpath{ get; set; }
+    [Parameter] public static EntBusinessOwner UpdateBO { get; set; }
+    private async Task UpdatebusinessOwner(int id)
+    {
+        UpdateBO = ListBusinesses.Find(x => x.boid == id);
+
+        nm.NavigateTo("addbusinessowner/update");
+    }
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationState { get; set; }
+    private int boid;
+    protected override async Task OnInitializedAsync()
+    {
+        var autState = await authenticationState;
+        boid = Convert.ToInt32(autState.User.FindFirst("BOId")?.Value);
+        ListBusinesses = await ob.GetBusinessOwner(boid);
+
+    }
+    private async Task NavigateToOwnerShops()
+    {
+        nm.NavigateTo($"/ownershops");
+    }
+    
+} 

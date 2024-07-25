@@ -1,0 +1,29 @@
+﻿@page "/savepackage"
+@inject NavigationManager nm
+@inject IPackages ob;
+<EditForm Model="PackageModel">
+    <input type="text" @bind="@PackageModel.packagename" placeholder="Enter Package Name" />
+    <br />
+    <br />
+    
+
+    <input type="text" @bind="@PackageModel.services" placeholder="Enter Services" />
+    <br />
+    <br />
+
+    <button type="submit" @onclick="SavePackages">Save</button>
+</EditForm>
+
+@code {
+    EntPackages PackageModel { get; set; } = new EntPackages();
+
+
+    private void SavePackages()
+    {
+        Random rand = new Random();
+        PackageModel.packageid = rand.Next(100000, 999999);
+        ob.SavePackage(PackageModel);
+        nm.NavigateTo("packagesprofile");
+    }
+}
+

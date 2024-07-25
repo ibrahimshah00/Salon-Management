@@ -1,0 +1,121 @@
+﻿@*  @page "/fileupload"
+@using DAL
+@inject IWebHostEnvironment env
+@inject AuthenticationStateProvider asp;
+@using Entities
+
+@inject Appstate mystate;
+
+<p>@Message</p>
+
+<form @onsubmit="OnSubmit" class="d-flex mb-3">
+    <InputFile OnChange="OnInputFileChange" multiple />
+    <br /><br />
+    <button type="submit">Update Image</button>
+
+</form>
+
+@code {
+
+
+    string Message = "NO files selected";
+    IReadOnlyList<IBrowserFile>? selectedFiles;
+
+
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        selectedFiles = e.GetMultipleFiles();
+        Message = $"{selectedFiles.Count} file(s) selected";
+        this.StateHasChanged();
+    }
+
+    private async void OnSubmit()
+    {
+        foreach (var file in selectedFiles)
+        {
+            Stream stream = file.OpenReadStream(maxAllowedSize: 10000000);
+
+           
+            var fileExtension = Path.GetExtension(file.Name);
+
+            // Generate a unique identifier (GUID)
+            var guid = Guid.NewGuid().ToString();
+
+            // Append GUID, file name, and extension to the path
+            var path = $"{env.WebRootPath}\\stuff\\{file.Name}";
+           
+            FileStream fs = File.Create(path);
+
+                await stream.CopyToAsync(fs);
+                stream.Close();
+                fs.Close();
+                
+            }
+
+            Message = $"{selectedFiles.Count} file(s) uploaded";
+            this.StateHasChanged();
+        }
+
+    }
+    }
+     *@
+
+            @page "/fileupload"
+@using DAL
+@inject IWebHostEnvironment env
+@inject AuthenticationStateProvider asp;
+@using Entities
+
+@inject Appstate mystate;
+
+<p>@Message</p>
+
+<form @onsubmit="OnSubmit" class="d-flex mb-3">
+    <InputFile OnChange="OnInputFileChange" multiple />
+    <br /><br />
+    <button type="submit">Update Image</button>
+</form>
+
+@code {
+    string Message = "NO files selected";
+    IReadOnlyList<IBrowserFile>? selectedFiles;
+
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        selectedFiles = e.GetMultipleFiles();
+        Message = $"{selectedFiles.Count} file(s) selected";
+        this.StateHasChanged();
+    }
+
+    private async void OnSubmit()
+    {
+        foreach (var file in selectedFiles)
+        {
+            Stream stream = file.OpenReadStream(maxAllowedSize: 10000000);
+
+            var fileExtension = Path.GetExtension(file.Name);
+
+            // Generate a unique identifier (GUID)
+            var guid = Guid.NewGuid().ToString();
+
+            // Append GUID, file name, and extension to the path
+            var path = $"{env.WebRootPath}\\stuff\\{file.Name}";
+
+            FileStream fs = File.Create(path);
+
+            await stream.CopyToAsync(fs);
+            stream.Close();
+            fs.Close();
+
+            // Store the uploaded file information in the shared state
+            mystate.UploadedFile = new UploadedFile
+                {
+                    FileName = file.Name,
+                    FilePath = path
+                };
+        }
+
+        Message = $"{selectedFiles.Count} file(s) uploaded";
+        this.StateHasChanged();
+    }
+}

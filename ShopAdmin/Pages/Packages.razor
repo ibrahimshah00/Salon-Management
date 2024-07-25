@@ -1,0 +1,120 @@
+﻿@page "/shoppackages"
+@using Microsoft.AspNetCore.WebUtilities;
+@using System.ComponentModel
+
+@using Entities;
+@using ShopAdmin.Data;
+@inject IPackages ob;
+@inject IServices se;
+@inject NavigationManager nm;
+@inject Appstate mystate;
+
+<AuthorizeView Roles="ShopOwner,administrator">
+    <Authorized>
+
+         <div class="container ">
+        <div class="d-flex justify-content-between mb-4">
+                
+            <button @onclick="()=>NaviagteToAddPackages(mystate.ShopDetail)" class="btn btn-primary " style=" width: 130px; height: 40px;">
+                Add Packages
+            </button>
+        </div>
+        </div>
+            
+
+       
+
+        <div class="row justify-content-center">
+            @foreach (var item in listpackages)
+            {
+                <div class="col-md-3 mb-4">
+                    <div class="card shadow-sm" style="width: 18rem;">
+                        @if (!string.IsNullOrEmpty(item.image))
+                        {
+                            var imagePath = item.image.Replace("wwwroot", "");
+                            <img src="@imagePath" class="card-img-top" alt="Service Image loading" style="height: 250px; object-fit: cover; border-top-left-radius: .25rem; border-top-right-radius: .25rem;" />
+                        }
+                        <div class="card-body text-center">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="card-title text-dark">@item.packagename</h5>
+                                <h5 class="card-title text-success">@item.price</h5>
+                            </div>
+                            <div class="card-text text-dark">
+                                @if (!string.IsNullOrEmpty(item.services))
+                                {
+                                    var serviceNames = item.services.Split(',').Select(name => name.Trim());
+                                    <div class="d-flex flex-wrap justify-content-center">
+                                        @foreach (var serviceName in serviceNames)
+                                        {
+                                            if (!string.IsNullOrEmpty(serviceName))
+                                            {
+                                                <span class="badge bg-secondary me-1">@serviceName</span>
+                                            }
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div class="d-flex justify-content-center mt-3">
+                                <button @onclick="()=>UpdatePackage(item.packageid)" class="btn btn-primary btn-sm me-1">Update</button>
+                                <button @onclick="()=>Delete(item.packageid)" class="btn btn-danger btn-sm">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to view this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+
+
+
+
+
+@code {
+    private List<EntPackages> listpackages { get; set; } = new List<EntPackages>();
+   private List<EntServices> listservices { get; set; } = new List<EntServices>();
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationState { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        listpackages = await ob.GetPackages(mystate.ShopDetail);
+        listservices = await se.GetServices(mystate.ShopDetail);
+    }
+
+
+    private async Task Delete(int id)
+    {
+        await ob.DeletePackage(id);
+        listpackages = await ob.GetPackages(mystate.ShopDetail);
+    }
+
+
+    private async Task NaviagteToAddPackages(int shopid)
+    {
+       
+        nm.NavigateTo($"/addpackage");
+    }
+
+    [Parameter] public static EntPackages UpdateBO { get; set; }
+    private async Task UpdatePackage(int id)
+    {
+        mystate.Packagedetail = id;
+        UpdateBO = listpackages.Find(x => x.packageid == id);
+
+        nm.NavigateTo($"/addpackage/update");
+    }
+
+    private void backtopage()
+    {
+        nm.NavigateTo(nm.Uri, forceLoad: true);
+    }
+
+}

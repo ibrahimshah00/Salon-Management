@@ -1,0 +1,136 @@
+﻿@page "/employeeworkbydate"
+@using System.ComponentModel
+    @using ShopAdmin.Data;
+    @using AntDesign.TableModels
+    @using AntDesign.Core.Extensions
+    @using Entities;
+    @inject IUserInfo ui;
+    @inject IEmployee em;
+    @inject Appstate mystate;
+    @using Entities;
+    @using ShopAdmin.Data;
+    @inject NavigationManager nm;
+    @inject IServices se;
+
+<div class="row">
+    <div class="col-md-8 mt-3">
+        <label for="employee">Select Employee:</label>
+        <select name="employee_names" id="employee" @bind="SelectedEmployee" class="form-control">
+            <option value="" disabled selected>Select employee</option>
+            @foreach (var i in listemployee)
+            {
+                <option value="@i.firstname.ToString()">@i.firstname @i.lastname </option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-4 mt-3">
+        <label for="workDate">Date:</label>
+        <input type="date" id="workDate" @bind="workDateAsString" class="form-control" />
+    </div>
+    <div class="col-md-4 mt-3">
+
+    </div>
+
+</div>
+
+<button class="btn btn-primary" @onclick="FetchEmployeeData">Fetch Data</button>
+<div class="row">
+
+<div class="col-md-6" style="max-height:390px; overflow-y: auto;">
+    <!-- Assuming you want the table to take up 50% of the width in a medium-sized screen -->
+    <table class="table" style="max-height:0px; overflow-y: auto;">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Number</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (ListBusinesses.Count > 0)
+            {
+                    @foreach (var employee in ListBusinesses)
+                {
+                    <tr>
+                        <td>@employee.name</td>
+                        <td>@employee.number</td>
+                        <td>@employee.amount</td>
+                    </tr>
+   
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="3">No work done by the selected employee on the @formattedDate</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+<div class="col-md-6">
+        <h4>Total Amount</h4>
+        <td>Total work done @sum</td>
+        <p>Enter the Employee percentage</p>
+        <input type="number" @bind=tax> 
+        
+        <button @onclick=CalculateEmployeeCommission>Calculate</button>
+        <br />
+        <br />
+        <br />
+        <p>@SelectedEmployee will get @employeeCommissionResult</p>
+        <br />
+        <br />
+        <p>Shop will get @ShopComission</p>
+
+    </div>
+</div>
+
+@code {
+
+
+    public string SelectedEmployee { get; set; }
+    public double sum;
+    public double tax;
+    private DateTime workDateAsString;
+
+    private List<EntUser> ListBusinesses { get; set; } = new List<EntUser>();
+
+    private string employeename;
+
+    private List<EntEmployee> listemployee { get; set; } = new List<EntEmployee>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        listemployee = await em.GetShopEmployee(mystate.ShopDetail);
+        workDateAsString = DateTime.Now.Date;
+
+    }
+    private string formattedDate;
+    private async Task FetchEmployeeData()
+    {
+        listemployee = await em.GetShopEmployee(mystate.ShopDetail);
+        formattedDate = workDateAsString.ToString("yyyy-MM-dd");
+        ListBusinesses = await ui.GetEmployeeWorkByDate(SelectedEmployee, formattedDate);
+
+
+        sum = 0;
+
+        // Calculate total sum
+        foreach (var employee in ListBusinesses)
+        {
+            sum += Convert.ToDouble(employee.amount);
+        }
+    }
+    private double employeeCommissionResult;
+    private double ShopComission;
+
+
+    private void CalculateEmployeeCommission()
+    {
+        employeeCommissionResult = (tax / 100) * sum;
+        ShopComission = sum - employeeCommissionResult;
+    }
+}
+ 

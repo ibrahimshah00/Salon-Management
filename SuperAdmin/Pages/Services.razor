@@ -1,0 +1,52 @@
+﻿@page "/servicesprofile"
+@using Entities;
+@using SuperAdmin.Data;
+@inject IServices ob;
+
+<h1>All Services </h1>
+
+<a href="saveservice" class="btn btn-primary">Add New</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Shop id</th>
+            <th>Service Name</th>
+            <th>Price</th>
+            <th>Is active</th>
+            <th>Action</th>
+
+        </tr>
+    </thead>
+    @foreach (var item in listservices)
+    {
+        <tr>
+            <td>@item.serviceid</td>
+            <td>@item.shopid</td>
+            <td>@item.servicename</td>
+            <td>@item.price</td>
+            <td>@item.isactive</td>
+            <td>
+                <button @onclick="()=>Delete(item.serviceid)">Delete</button>
+            </td>
+        </tr>
+    }
+</table>
+
+
+@code {
+    private List<EntServices> listservices { get; set; } = new List<EntServices>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        listservices = await ob.GetServices();
+    }
+
+    private async Task Delete(int BOId)
+    {
+        await ob.DeleteService(BOId);
+        listservices = await ob.GetServices();
+
+    }
+}

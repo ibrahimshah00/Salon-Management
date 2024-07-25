@@ -1,0 +1,169 @@
+﻿@page "/dailysale"
+@layout DailySaleLayout
+@using System.ComponentModel
+@using ShopAdmin.Data;
+@using AntDesign.TableModels
+@using AntDesign.Core.Extensions
+@using Entities;
+@inject IUserInfo ui;
+@inject IEmployee em;
+@inject Appstate mystate;
+@using Entities;
+@using ShopAdmin.Data;
+@inject NavigationManager nm;
+@inject IServices se;
+@inject IJSRuntime jsRuntime
+
+<div class="container-fluid p-3">
+    <div class="row">
+        <div class="col-md-12 d-flex justify-content-between align-items-center">
+            <div>
+                <span><strong>Location:</strong> G11 ISB</span>
+                <span class="ml-3"><strong>Date:</strong>@workDateAsString </span>
+            </div>
+            <div>
+                <button class="btn btn-secondary">Add Expense</button>
+                <!-- Other buttons as necessary -->
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-8">
+            <div class="input-group mb-3">
+                <input type="text" @bind=UserModel.name placeholder="Enter Customer Name" class="form-control me-2" />
+                <input type="text" @bind=UserModel.number placeholder="Enter Customer Mobile Number" class="form-control" />
+                <input type="date" @bind=UserModel.datetime class="form-control" />
+                
+                <div class="col-md-12 mt-3">
+                    <select name="employee_names" id="employee" @bind="SelectedEmployee" class="form-control">
+                        <option value="" disabled selected>Select employee</option>
+                        @foreach (var i in listemployee)
+                        {
+                            <option value="@i.firstname.ToString()">@i.firstname @i.lastname </option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Subtotal</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var item in listselected)
+                        {
+                            <tr>
+                                <td>@item.servicename</td>
+                                <td>1</td>
+                                <td>@item.price</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => RemoveFromList(item)">X</button>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="d-flex mb-3">
+                <select class="form-control mr-2">
+                    <option>All Services</option>
+                    <!-- More categories here -->
+                </select>
+               
+            </div>
+
+            <div class="row">
+                @foreach (var item in listservices)
+                {
+                    <div class="col-md-4 mb-3">
+                        <button class="border-0 bg-transparent" @onclick="() => AddToList(item)">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    @if (!string.IsNullOrEmpty(item.Image))
+                                    {
+                                        var correctedPath = item.Image.Replace("//ServiceIcon/", "/ServiceIcon/");
+                                        <img src="@correctedPath" alt="Service Image" height="50" />
+                                    }
+                                    <br />
+                                    <b>@item.servicename</b>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-12 text-right fixed-bottom bg-white py-3">
+            
+            <button class="btn btn-primary btn-custom">Cash</button>
+            <button class="btn btn-danger btn-custom" @onclick=generatebill>Cancel</button>
+            <button class="btn btn-primary btn-custom">Total Payable: @grandtotal.ToString("0.00")</button>
+            <button class="btn btn-success" @onclick=generatebill> Checkout</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    public string SelectedEmployee { get; set; }
+    private double grandtotal = 0;
+    private EntUser UserModel { get; set; } = new EntUser();
+    private List<EntEmployee> listemployee { get; set; } = new List<EntEmployee>();
+    private List<EntServices> listservices { get; set; } = new List<EntServices>();
+    public List<EntServices> listselected { get; set; } = new List<EntServices>();
+    private DateTime workDateAsString;
+    protected override async Task OnInitializedAsync()
+    {
+        listservices = await se.GetServices(mystate.ShopDetail);
+        listemployee = await em.GetShopEmployee(mystate.ShopDetail);
+        workDateAsString = DateTime.Now.Date;
+        UserModel.datetime = workDateAsString;
+    }
+
+    private void CalculateGrandTotal()
+    {
+        grandtotal = listselected.Sum(service => service.price);
+    }
+
+    private void AddToList(EntServices selectedService)
+    {
+        listselected.Add(selectedService);
+        CalculateGrandTotal();
+    }
+
+    private void RemoveFromList(EntServices selectedService)
+    {
+        listselected.Remove(selectedService);
+        CalculateGrandTotal();
+    }
+
+    private void generatebill()
+    {
+        SaveInfo();
+    }
+
+    private void SaveInfo()
+    {
+        UserModel.employee = SelectedEmployee;
+        UserModel.shopid = mystate.ShopDetail;
+        CalculateGrandTotal();
+        UserModel.amount = grandtotal.ToString("0.00");
+        ui.AddUserInfo(UserModel);
+        listselected.Clear();
+    }
+}

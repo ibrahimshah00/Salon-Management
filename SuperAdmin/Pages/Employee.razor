@@ -1,0 +1,74 @@
+﻿@page "/employeeprofile"
+@using Entities;
+@using SuperAdmin.Data;
+@inject IEmployee ob;
+
+<h3>Employee</h3>
+<h1>All Employee </h1>
+
+<a href="saveemployee" class="btn btn-primary">Add New</a>
+
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Shop id</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Phone</th>
+            <th>DOB</th>
+            <th>CNIC</th>
+            <th>Permanent Adress</th>
+            <th>Temporary Adress</th>
+            <th>Employee Type</th>
+            <th>Joining Date</th>
+            <th>Ending Date</th>
+            <th>Active</th>
+            <th>Action</th>
+
+        </tr>
+    </thead>
+    @if (listemployee != null)
+    {
+        @foreach (var item in listemployee)
+        {
+            <tr>
+                <td>@item.empid</td>
+                <td>@item.shopid</td>
+                <td>@item.firstname</td>
+                <td>@item.lastname</td>
+                <td>@item.phone</td>
+                <td>@item.dob</td>
+                <td>@item.cnic</td>
+                <td>@item.padress</td>
+                <td>@item.tadress</td>
+                <td>@item.emptype</td>
+                <td>@item.joiningdate</td>
+                <td>@item.enddate</td>
+                <td>@item.isactive</td>
+                <td>
+                    <button @onclick="()=>Delete(item.empid)">Delete</button>
+                </td>
+            </tr>
+        }
+
+    }
+</table>
+
+
+@code {
+    private List<EntEmployee> listemployee { get; set; } = new List<EntEmployee>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        listemployee = await ob.GetEmployees();
+    }
+
+    private async Task Delete(int BOId)
+    {
+        await ob.DeleteEmployee(BOId);
+        listemployee = await ob.GetEmployees();
+
+    }
+}

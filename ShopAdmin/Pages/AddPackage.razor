@@ -1,0 +1,128 @@
+﻿@page "/addpackage"
+@page "/addpackage/{edit}"
+@inject HttpClient Http;
+@using Entities;
+@using ShopAdmin.Data;
+@inject NavigationManager nm
+@inject IPackages ob;
+@inject IServices se;
+@inject Appstate mystate;
+@using System.IO;
+@using System.Data;
+@using ShopAdmin.Pages.Reuseable
+<AuthorizeView Context="authorizationContext" Roles="ShopOwner,administrator">
+    <Authorized>
+
+<EditForm Model="PackageModel">
+    <div class="row">
+                <div class="col-md-8 offset-lg-2">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h3>Manage your Shop</h3>
+    <input class="form-control mb-2" type="text" @bind="@PackageModel.packagename" placeholder="Enter Package Name" />
+   
+    @* <input type="text" @bind="@PackageModel.services" placeholder="Enter Services" />
+    <br /> *@
+     <input class="form-control mb-2" type="text" @bind="PackageModel.price" placeholder="Enter Price" />
+    @if (listservices != null)
+            {
+                foreach (var service in listservices)
+                {
+                    <div>
+                        <input  type="checkbox" value="@service.serviceid" @onchange="() => ToggleServiceSelection(service.serviceid)" /> @service.servicename;
+                    </div>
+                }
+            }
+    <InputFile OnChange="@OnInputFileChange" class="form-control mb-2"  />        
+    <button type="submit" @onclick="savepackages" class="btn btn-primary">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+</EditForm>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to access this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code {
+    private List<EntServices> listservices { get; set; } = new List<EntServices>();
+    EntPackages PackageModel { get; set; } = new EntPackages();
+    HashSet<int> SelectedServices { get; set; } = new HashSet<int>();
+    private int id;
+    [Parameter] public string? edit { get; set; }
+    private string? ButtonTitle { get; set; } = "Save";
+    protected override async Task OnInitializedAsync()
+    {
+        listservices = await se.GetServices(mystate.ShopDetail);
+        if (edit == "update")
+        {
+            PackageModel = Packages.UpdateBO;
+            ButtonTitle = "Update";
+            var currentServiceNames = PackageModel.services?.Split(',') ?? Array.Empty<string>();
+            SelectedServices = new HashSet<int>(
+                listservices.Where(s => currentServiceNames.Contains(s.servicename))
+                            .Select(s => s.serviceid));
+        }
+    }
+
+    private void savepackages()
+    {
+        if (PackageModel != null)
+        {
+            var selectedServiceNames = SelectedServices
+            .Select(id => listservices.FirstOrDefault(s => s.serviceid == id)?.servicename)
+            .Where(name => !string.IsNullOrEmpty(name))
+            .ToList();
+
+            // Join the names into a single string
+            PackageModel.services = string.Join(",", selectedServiceNames);
+
+            if (ButtonTitle == "Save")
+            {
+                
+                Random rand = new Random();
+                PackageModel.packageid = rand.Next(100000, 999999);
+                PackageModel.shopid = mystate.ShopDetail;
+
+                ob.SavePackage(PackageModel);
+                nm.NavigateTo($"/shoppackages");
+            }
+            else if (ButtonTitle == "Update")
+            {
+                ob.Updatepackage(PackageModel);
+                nm.NavigateTo($"/shoppackages");
+            }
+        }
+    }
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            var imagesPath = "wwwroot/images";
+            if (!Directory.Exists(imagesPath))
+            {
+                Directory.CreateDirectory(imagesPath);
+            }
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.Name);
+            var filePath = Path.Combine(imagesPath, fileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.OpenReadStream().CopyToAsync(stream);
+            }
+            PackageModel.image = filePath;
+        }
+
+    }
+    private void ToggleServiceSelection(int serviceId)
+    {
+        if (!SelectedServices.Add(serviceId)) // Try to add, if it returns false, it means it was already present
+        {
+            SelectedServices.Remove(serviceId); // So remove it
+        }
+    }
+            
+ }

@@ -1,0 +1,60 @@
+﻿@page "/shopprofile"
+@using SuperAdmin.Data;
+@using Entities;
+@inject IShop ob;
+
+<h1>All Shops </h1>
+
+<a href="saveshop" class="btn btn-primary">Add New</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Boid</th>
+            <th>City</th>
+            <th>Area</th>
+            <th>Location</th>
+            <th>Phone</th>
+            <th>Url</th>
+            <th>Cover Image</th>
+            <th>Business description</th>
+            <th>Active</th>
+            <th>Action</th>
+
+        </tr>
+    </thead>
+            @foreach(var item in ListShop)
+            {
+        <tr>
+            <td>@item.shopid</td>
+            <td>@item.boid</td>
+            <td>@item.city</td>
+            <td>@item.area</td>
+            <td>@item.location</td>
+            <td>@item.phone</td>
+            <td>@item.logurl</td>
+            <td>@item.coverimageurl</td>
+            <td>@item.businessdescription</td>
+            <td>@item.isactive</td>
+            <button @onclick="()=>Delete(item.shopid)" class="btn btn-primary">Delete</button>
+          
+        </tr>
+            }
+            </table>
+
+    @code
+{
+    private List<EntShop> ListShop{ get; set; } = new List<EntShop>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        ListShop = await ob.GetShop();
+    }
+    private async Task Delete(int BOId)
+    {
+        await ob.DeleteShop(BOId);
+        ListShop = await ob.GetShop();
+
+    }
+    }

@@ -1,0 +1,70 @@
+﻿ @page "/employeework"
+@using System.ComponentModel
+    @using ShopAdmin.Data;
+    @using AntDesign.TableModels
+    @using AntDesign.Core.Extensions
+    @using Entities;
+    @inject IUserInfo ui;
+    @inject IEmployee em;
+    @inject Appstate mystate;
+    @using Entities;
+    @using ShopAdmin.Data;
+    @inject NavigationManager nm;
+    @inject IServices se;
+
+<div class="col-md-12 mt-3">
+    <select name="employee_names" id="employee" @bind="SelectedEmployee" class="form-control">
+        <option value="" disabled selected>Select employee</option>
+        @foreach (var i in listemployee)
+        {
+            <option value="@i.firstname.ToString()">@i.firstname @i.lastname </option>
+        }
+    </select>
+</div>
+
+
+        
+        <br />
+        <button class="btn btn-primary" @onclick="FetchEmployeeData">Fetch Data</button>
+
+        
+<table class="table">
+    <thead>
+        <tr>
+            
+            <th>Name</th>
+            <th>Number</th>
+            <th>Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var employee in ListBusinesses)
+        {
+            <tr>
+                
+                <td>@employee.name</td>
+                <td>@employee.number</td>
+                <td>@employee.amount</td>
+            </tr>
+        }
+    </tbody>
+</table>
+@code {
+
+
+    public string SelectedEmployee { get; set; }
+    private List<EntUser> ListBusinesses { get; set; } = new List<EntUser>();
+    private string employeename;
+    private List<EntEmployee> listemployee { get; set; } = new List<EntEmployee>();
+    protected override async Task OnInitializedAsync()
+    {
+
+        listemployee = await em.GetShopEmployee(mystate.ShopDetail);
+
+    }
+    private async Task FetchEmployeeData()
+    {
+        listemployee = await em.GetShopEmployee(mystate.ShopDetail);
+        ListBusinesses = await ui.GetUserInfobyemployee(SelectedEmployee);
+    }
+}

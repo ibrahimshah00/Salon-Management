@@ -1,0 +1,116 @@
+﻿@page "/shopservices"
+@using System.ComponentModel
+@using AntDesign.TableModels
+@using AntDesign.Core.Extensions
+@inject NavigationManager nm;
+@using Entities;
+@using ShopAdmin.Data;
+@inject IServices se;
+@inject Appstate mystate;
+
+
+<AuthorizeView Roles="ShopOwner,administrator">
+    <Authorized>
+
+        <div class="container ">
+            <div class="d-flex justify-content-between mb-4">
+                
+                <button @onclick="()=>NaviagteToServices(mystate.ShopDetail)" class="btn btn-primary " style=" width: 120px; height: 40px;">
+                    Add Services
+                </button>
+            </div>
+        </div>
+
+
+
+       
+        <div class="row justify-content-center">
+            @foreach (var item in listservices)
+            {
+                <div class="col-md-3 mb-4">
+                    <div class="card shadow-sm" style="width: 18rem;">
+                        @if (!string.IsNullOrEmpty(item.Image))
+                        {
+                            var correctedPath = item.Image.Replace("//ServiceIcon/", "/ServiceIcon/");
+                            <img src="@correctedPath" class="card-img-top" alt="Service Image" style="height: 250px; object-fit: cover; border-top-left-radius: .25rem; border-top-right-radius: .25rem;" />
+                        }
+                        <div class="card-body text-center" style="max-height: 100px; overflow:hidden">
+                            <div class="d-flex justify-content-between">
+                            <h5 class="card-title text-dark">@item.servicename</h5>
+                            <h5 class="card-title text-dark">@item.price</h5>
+
+                            </div>
+                            
+                            <div class="d-flex justify-content-center mt-3">
+                                <button @onclick="()=>UpdateServices(item.serviceid)" class="btn btn-primary btn-sm me-1">Update</button>
+                                <button @onclick="()=>Delete(item.serviceid)" class="btn btn-danger btn-sm">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to view this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@*   @if (!string.IsNullOrEmpty(item.Image))
+                        {
+
+                             var imagePath = item.Image.Replace("wwwroot", "");
+                            var imagePath = item.Image.StartsWith("wwwroot") ? item.Image.Substring(7) : item.Image;
+                            <img src="@imagePath" alt="Service Image loading" style="max-width: 100%; height: 200px;" />
+                        }
+                        @if (!string.IsNullOrEmpty(item.Image))
+                        {
+                            var imagePath = item.Image.StartsWith("wwwroot") ? item.Image.Substring(7) : item.Image;
+                            <img src="@imagePath" alt="Service Image loading" style="max-width: 100%; height: 200px;" />
+                    }*@
+
+@code {
+    private List<EntServices> listservices { get; set; } = new List<EntServices>();
+    //EntServices[] data = new EntServices[] { };
+    public static string CorrectImagePath(string path)
+    {
+        return path.Replace("//ServiceIcon/", "/ServiceIcon/");
+    }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        listservices = await se.GetServices(mystate.ShopDetail);
+    }
+
+    private async Task Delete(int id)
+    {
+        await se.DeleteServices(id);
+        listservices = await se.GetServices(mystate.ShopDetail);
+    }
+
+    private async Task NaviagteToServices(int shopid)
+    {
+        mystate.ShopDetail = shopid;
+        nm.NavigateTo($"/addservices");
+    }
+   
+
+    [Parameter] public static EntServices UpdateBO { get; set; }
+
+    private async Task UpdateServices(int id)
+    {
+        mystate.Servicedetail = id;
+        UpdateBO = listservices.Find(x => x.serviceid == id);
+
+        nm.NavigateTo($"/addservices/update");
+    }
+    private async Task backtopage()
+    {
+        nm.NavigateTo($"/ownershops");
+    }
+    
+}

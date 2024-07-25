@@ -1,0 +1,28 @@
+﻿@page "/saveservice"
+@inject NavigationManager nm
+@inject IServices ob;
+<EditForm Model="ServiceModel">
+
+    <input type="text" @bind="@ServiceModel.price" placeholder="Enter Price" />
+    <br />
+    <br />
+    <input type="text" @bind="@ServiceModel.servicename" placeholder="Enter Service Name" />
+    <br />
+    <br 
+
+
+    <button type="submit" @onclick="saveservices">Save</button>
+</EditForm>
+
+@code {
+    EntServices ServiceModel { get; set; } = new EntServices();
+
+
+    private void saveservices()
+    {
+        Random rand = new Random();
+        ServiceModel.serviceid = rand.Next(100000, 999999);
+        ob.SaveService(ServiceModel);
+        nm.NavigateTo("servicesprofile");
+    }
+}

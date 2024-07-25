@@ -1,0 +1,37 @@
+﻿@page "/saveshop"
+@inject NavigationManager nm
+@inject IShop ob;
+<EditForm Model="ShopModel">
+    <input type="text" @bind="@ShopModel.city" placeholder="Enter city" />
+    <br />
+    <br />
+    <input type="text" @bind="@ShopModel.area" placeholder="Enter area" />
+    <br />
+    <br />
+    <input type="text" @bind="@ShopModel.location" placeholder="Enter location " />
+    <br />
+    <br />
+    <input type="text" @bind="@ShopModel.logurl" placeholder="Enter logo" />
+    <br /><br />
+    <input type="text" @bind="@ShopModel.coverimageurl" placeholder="Enter coverimage" />
+    <br /><br />
+    <input type="text" @bind="@ShopModel.businessdescription" placeholder="Enter business description" />
+    <br /><br />
+    <input type="text" @bind="@ShopModel.phone" placeholder="Enter Phone" />
+    <br /><br />
+
+    <button type="submit" @onclick="saveshop">Save</button>
+</EditForm>
+
+@code {
+    EntShop ShopModel { get; set; } = new EntShop();
+
+
+    private void saveshop()
+    {
+        Random rand = new Random();
+        ShopModel.shopid = rand.Next(100000, 999999);
+        ob.SaveShop(ShopModel);
+        nm.NavigateTo("shopprofile");
+    }
+}

@@ -1,0 +1,43 @@
+﻿@using ShopAdmin.Authentication
+@using Microsoft.AspNetCore.Components.Authorization
+@inherits LayoutComponentBase
+@inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager navManager
+
+<PageTitle>Shop Admin</PageTitle>
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            
+           <AuthorizeView>
+               <Authorized>
+                   <a @onclick="Logout">Logout</a>
+               </Authorized>
+               <NotAuthorized>
+                   <a href="/login  ">Login</a>
+               </NotAuthorized>
+           </AuthorizeView>
+        </div>
+
+        <article class="content px-4">
+            <CascadingValue Value="@ApplicationState">
+            @Body
+            </CascadingValue>
+        </article>
+    </main>
+</div>
+@code 
+{
+    private async Task Logout()
+    {
+        var customÄuthStateProvider = (CustomAuthenticationStateProvider)authStateProvider;
+        await customÄuthStateProvider.UpdateAuthenticationState(null);
+        navManager.NavigateTo("/",true);
+    }
+    public Appstate ApplicationState { get; set; }
+}

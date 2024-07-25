@@ -1,0 +1,56 @@
+﻿@page "/savebo"
+@page "/savebo/{edit}"
+@inject NavigationManager nm
+@inject IBusniessOwner ob;
+<EditForm Model="BusinessOwnerModel">
+    <input type="text" @bind="@BusinessOwnerModel.firstname" placeholder="Enter First Name" />
+    <br />
+    <br />
+    <input type="text" @bind="@BusinessOwnerModel.lastname" placeholder="Enter last Name" />
+    <br />
+    <br />
+    <input type="text" @bind="@BusinessOwnerModel.phone" placeholder="Enter phone " />
+    <br />
+    <br />
+    <input type="text" @bind="@BusinessOwnerModel.emailadress" placeholder="Enter Email" />
+    <br />
+    <br />
+    <input type="text" @bind="@BusinessOwnerModel.cnic" placeholder="Enter Cnic" />
+    <br /><br />
+
+    <button type="submit" @onclick="SaveBO">@ButtonTitle</button>
+</EditForm>
+
+@code {
+    EntBusinessOwner BusinessOwnerModel { get; set; } = new EntBusinessOwner();
+    [Parameter] public string? edit { get; set; }
+    private string? ButtonTitle { get; set; } = "Save";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (edit == "update")
+        {
+            BusinessOwnerModel = BusinessOwner.UpdateBO;
+            ButtonTitle = "Update";
+        }
+        //return base.OnInitializedAsync();
+    }
+
+    private void SaveBO()
+    {
+        if (ButtonTitle == "Save")
+        {
+            Random rand = new Random();
+            BusinessOwnerModel.boid = rand.Next(100000, 999999);
+            ob.SaveBusinessOwner(BusinessOwnerModel);
+            nm.NavigateTo("businessprofile");
+        }
+        else if (ButtonTitle == "Update")
+        {
+            ob.UpdateBusinessOwner(BusinessOwnerModel);
+            nm.NavigateTo("businessprofile");
+        }
+
+    }
+}

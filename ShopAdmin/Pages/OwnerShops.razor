@@ -1,0 +1,115 @@
+﻿@page "/ownershops"
+@using ShopAdmin.Data;
+@using Entities;
+@inject Appstate mystate;
+@inject IShop so;
+@inject IAllBusinessOwner bo;
+@inject NavigationManager nm;
+@inject Appstate mystate;
+
+
+
+<AuthorizeView Roles="ShopOwner,administrator">
+    <Authorized>
+        
+        
+            <button @onclick="()=>NavigateToAddShop(boid)" class="btn btn-primary " style=" width: 120px; height: 40px;">
+                Add Shop
+            </button>
+       <br />
+       <br />
+        <div class="row">
+            @foreach (var item in ListShop)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm" style="width: 100%;">
+                        @if (!string.IsNullOrEmpty(item.image))
+                        {
+                            var imagePath = item.image.Replace("wwwroot", "");
+                            <img src="@imagePath" class="card-img-top" alt="Shop Image" style="height: 250px; object-fit: cover; border-top-left-radius: .25rem; border-top-right-radius: .25rem;" />
+                        }
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-dark">@item.businessdescription</h5>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="badge bg-secondary">@item.phone</span>
+                                <span class="badge bg-success">@item.city</span>
+                            </div>
+                            <div class="d-flex flex-wrap justify-content-center">
+                                <button @onclick="()=>UpdateShop(item.shopid)" class="btn btn-primary btn-sm m-1">Update</button>
+                                <button @onclick="()=>NavigateToShopPackages(item.shopid)" class="btn btn-primary btn-sm m-1">Package</button>
+                                <button @onclick="()=>NavigateToShopServices(item.shopid)" class="btn btn-primary btn-sm m-1">Services</button>
+                                <button @onclick="()=>NavigateToShopEmployee(item.shopid)" class="btn btn-primary btn-sm m-1">Employee</button>
+                                <button @onclick="()=>DeleteShop(item.shopid)" class="btn btn-danger btn-sm m-1">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to view this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+
+
+@code
+{
+    private List<EntShop> ListShop { get; set; } = new List<EntShop>();
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationState { get; set; }
+
+    private int boid;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var autState = await authenticationState;
+        boid = Convert.ToInt32(autState.User.FindFirst("BOId")?.Value);
+        ListShop = await so.GetBusinessOwnerShop(boid);
+
+    }
+
+
+       private async Task NavigateToShopPackages(int shopid)
+    {
+        mystate.ShopDetail = shopid;
+        nm.NavigateTo($"/shoppackages");
+
+      
+    }
+
+    private async Task NavigateToAddShop(int boid)
+    {
+        mystate.boid = boid;
+        nm.NavigateTo($"/addownershop");
+    }
+
+    private async Task DeleteShop(int id)
+    {
+        await so.DeleteShop(id);
+        ListShop = await so.GetBusinessOwnerShop(boid);
+    }
+
+    private async Task NavigateToShopEmployee(int shopid)
+    {
+        mystate.ShopDetail = shopid;
+        nm.NavigateTo($"/shopemployee");
+    }
+    
+    private async Task NavigateToShopServices(int shopid)
+    {
+        mystate.ShopDetail = shopid;
+        nm.NavigateTo($"/shopservices");
+    }
+ 
+    [Parameter] public static EntShop UpdateBO { get; set; }
+    private async Task UpdateShop(int id)
+    {
+        UpdateBO = ListShop.Find(x => x.shopid == id);
+        nm.NavigateTo($"/addownershop/update");
+    }
+}

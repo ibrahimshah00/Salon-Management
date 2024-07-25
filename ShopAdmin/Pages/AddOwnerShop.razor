@@ -1,0 +1,126 @@
+﻿@page "/addownershop";
+@page "/addownershop/{edit}";
+@using Entities;
+@using ShopAdmin.Data;
+@inject NavigationManager nm;
+@inject IShop bo;
+
+@inject Appstate mystate;
+<AuthorizeView Context="authorizationContext" Roles="ShopOwner,administrator">
+    <Authorized>
+<h3>AddOwnerShop</h3>
+<br />      <br />
+
+<EditForm Model="ShopModel">
+     <div class="row">
+                <div class="col-md-8 offset-lg-2">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h3>Manage your Shop</h3>
+                            <input type="text" class="form-control mb-2" @bind="ShopModel.businessdescription" placeholder="Enter Business Description" />
+                            
+                            <input type="text" class="form-control mb-2" @bind="ShopModel.city" placeholder="Enter Business Description" />
+                            
+                            <input type="text" class="form-control mb-2" @bind="ShopModel.area" placeholder="Enter Business Description" />
+                            
+                            <input type="text" class="form-control mb-2" @bind="ShopModel.location" placeholder="Enter Business Description" />
+                            
+                            <input type="text" class="form-control mb-2" @bind=ShopModel.coverimageurl placeholder="Enter Business Description" />
+                           
+                            <input type="text" class="form-control mb-2" @bind=ShopModel.logurl placeholder="Enter Business Description" />
+                            
+                            <input type="text" class="form-control mb-2" @bind=ShopModel.phone placeholder="Enter Business Description" />
+
+                            <InputFile OnChange="@OnInputFileChange" class="form-control mb-2" />
+
+                            <button type="submit" @onclick=SaveShop class="btn btn-primary">Save</button>
+@* 
+    <input type="text" @bind=ShopModel.businessdescription placeholder="Enter Business Description"/>
+    <br /><br />
+    <input type="text" @bind=ShopModel.city placeholder="Enter City" />
+    <br /><br />
+    <input type="text" @bind=ShopModel.area placeholder="Enter Area" />
+    <br /><br />
+    <input type="text" @bind=ShopModel.location placeholder="Enter Location" />
+    <br /><br />
+    <input type="text" @bind=ShopModel.coverimageurl placeholder="Enter Coverimage" />
+    <br /><br />
+    <input type="text" @bind=ShopModel.logurl placeholder="Enter Logo" />
+    <br /><br />
+    <input type="text" @bind=ShopModel.phone placeholder="Enter Phone" />
+    <br /><br /> *@
+           
+                        </div>
+                    </div>
+                </div>
+            </div>
+</EditForm>
+    </Authorized>
+    <NotAuthorized>
+        <p>You are not authorized to access this page.</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    private int selectedBusinessOwnerId;
+    private EntShop ShopModel { get; set; } = new EntShop();
+    [Parameter] public string? edit { get; set; }
+    private string? ButtonTitle { get; set; } = "Save";
+
+
+    public int boid { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (edit == "update")
+        {
+            ShopModel = OwnerShops.UpdateBO;
+            ButtonTitle = "Update";
+        }
+        //return base.OnInitializedAsync();
+    }
+
+    private void SaveShop()
+    {
+        if (ButtonTitle == "Save")
+        {
+            Random rand = new Random();
+            ShopModel.shopid = rand.Next(100000, 999999);
+            ShopModel.boid = mystate.boid;
+            bo.SaveShop(ShopModel);
+            nm.NavigateTo($"/ownershops");
+        }
+        else if (ButtonTitle == "Update")
+        {
+            bo.UpdateShop(ShopModel);
+            nm.NavigateTo($"/ownershops");
+        }
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+
+            var imagesPath = "wwwroot/images";
+
+            if (!Directory.Exists(imagesPath))
+            {
+                Directory.CreateDirectory(imagesPath);
+            }
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.Name);
+            var filePath = Path.Combine(imagesPath, fileName);
+
+            // Save the file to the specified path.
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.OpenReadStream().CopyToAsync(stream);
+            }
+
+            // Save the relative path or the necessary identifier of the image in the database.
+            ShopModel.image = filePath;
+        }
+    }
+}
